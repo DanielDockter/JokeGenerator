@@ -1,0 +1,135 @@
+import requests  # Library for making HTTP requests.
+import os  # Library for interacting with the file system.
+
+# File where jokes that are seen will be stored after running the program.
+JOKE_FILE = "jokes.txt"
+
+def fetch_joke() -> dict:
+    """
+    Fetch a random joke from the Official Joke API.
+
+    Returns:
+        dict: A dictionary containing the joke's setup and punchline,
+              or an empty dictionary if an error occurs.
+    """
+    url = "https://official-joke-api.appspot.com/jokes/random"  # API endpoint for random jokes.
+    try:
+        # Perform an HTTP GET request to fetch the joke.
+        response = requests.get(url, timeout=10)  # Timeout after 10 seconds.
+        response.raise_for_status()  # Raise an HTTPError for bad responses.
+        return response.json()  # Parse the JSON response into a Python dictionary.
+    except requests.ConnectionError:
+        print("Network error. Please check your internet connection.")
+    except requests.Timeout:
+        print("Request timed out. Please try again later.")
+    except requests.RequestException as e:
+        # Generic exception handler for other request errors.
+        print(f"An error occurred: {e}")
+    return {}  # Return an empty dictionary if an error occurs.
+
+def save_joke(joke: dict):
+    """
+    Save a joke to the file in the format: Setup - Punchline.
+
+    Args:
+        joke (dict): A dictionary containing the joke's setup and punchline.
+    """
+    if not joke:  # If the joke is empty, there's nothing to save.
+        print("But our joke is in another castle!")
+        return
+
+    try:
+        # Open the file in append mode and write the joke.
+        with open(JOKE_FILE, "a") as file:
+            file.write(f"{joke['setup']} - {joke['punchline']}\n")
+        print("Joke saved.")
+    except OSError as e:
+        # Handle errors related to file operations.
+        print(f"Oops, there was an error saving the joke to file. Quack: {e}")
+
+def read_jokes():
+    """
+    Read and display all saved jokes from the file.
+    """
+    try:
+        # Check if the joke file exists and ensure it isn't empty.
+        if not os.path.exists(JOKE_FILE) or os.path.getsize(JOKE_FILE) == 0:
+            print("\nNo jokes saved yet!")
+            return
+        
+        # Open the file and read all lines.
+        with open(JOKE_FILE, "r") as file:
+            jokes = file.readlines()
+
+        # Display the jokes with numbering for better readability.
+        print("\nSaved Jokes:")
+        print("-" * 40)  # Separator line for formatting.
+        for i, joke in enumerate(jokes, start=1):
+            print(f"{i}. {joke.strip()}")  # Strip removes newlines.
+        print("-" * 40)
+    except OSError as e:
+        # Handle errors related to file operations.
+        print(f"Error reading jokes from file: {e}")
+
+def clear_jokes():
+    """
+    Clear all saved jokes by deleting the contents of the joke file.
+    """
+    try:
+        # Overwrite the file with an empty string to clear its contents.
+        if os.path.exists(JOKE_FILE):
+            with open(JOKE_FILE, "w") as file:
+                pass  # Simply open in write mode to clear the file.
+            print("\nAll jokes have been cleared!")
+        else:
+            print("\nNo joke file found to clear!")
+    except OSError as e:
+        # Handle errors related to file operations.
+        print(f"Error clearing jokes from file: {e}")
+
+def main():
+    """
+    Main program loop that provides a menu for the user to:
+    1. Fetch a new joke
+    2. View saved jokes
+    3. Clear all saved jokes
+    4. Exit the program
+    """
+    while True:
+        # Display the menu.
+        print("\n=== Joke Generator ===")
+        print("1. Retrieve and Save Joke")
+        print("2. View Saved Jokes")
+        print("3. Clear Saved Jokes")
+        print("4. Exit Program")
+        
+        # Get user input for menu choice.
+        choice = input("Enter your choice: ").strip()
+
+        if choice == "1":
+            # Fetch a joke from the API and displays it.
+            joke = fetch_joke()
+            if joke:
+                print("\nHere's a new joke:")
+                print(f"{joke['setup']}")
+                print(f"{joke['punchline']}")
+                save_joke(joke)  # Save the joke to the file.
+            else:
+                print("Failed to fetch a joke.")
+        elif choice == "2":
+            # View saved jokes.
+            read_jokes()
+        elif choice == "3":
+            # Clear all saved jokes.
+            clear_jokes()
+        elif choice == "4":
+            # Exit the program.
+            print("Program Exiting, hopefully you can use these jokes.")
+            break
+        else:
+            # Handle invalid input.
+            print("Invalid choice. Please enter 1, 2, 3, or 4.")
+
+# Entry point of the joke script.
+if __name__ == "__main__":
+    main()
